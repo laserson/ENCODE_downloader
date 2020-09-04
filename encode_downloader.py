@@ -279,7 +279,6 @@ def main():
                         break
             if not valid: continue
             url_file = ENCODE_BASE_URL+f['href']
-            file_accession_id = f['accession']
 
             if args.ignore_released and status=='released': continue
             if args.ignore_unpublished and status!='released': continue
@@ -358,6 +357,7 @@ def main():
 
             # for fastq, store files with the same bio_rep_id and pair: these files will be pooled later in a pipeline
             if bio_rep_id:
+                file_accession_id = f['accession']
                 metadata['files'][file_accession_id] = dict(
                     file_type=file_type,
                     file_format=file_format,
