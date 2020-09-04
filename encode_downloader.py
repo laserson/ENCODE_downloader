@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Written by Jin Lee (leepc12@gmail.com) 
+Written by Jin Lee (leepc12@gmail.com)
 Anshul Kundaje's lab at Stanford University.
 '''
 
@@ -53,7 +53,7 @@ def parse_arguments():
     parser.add_argument('--encode-secret-key', type=str,
                             help='ENCODE secret key (--encode-access-key-id must be specified).' )
     parser.add_argument('--ignored-accession-ids-file', type=str,
-                            help='Text file with ignored accession IDs.')    
+                            help='Text file with ignored accession IDs.')
     parser.add_argument('--pooled-rep-only', action="store_true",\
                             help='Download genome data from pooled replicates only.')
     parser.add_argument('--dry-run', action="store_true",\
@@ -96,7 +96,7 @@ def is_encode_search_query_url( url ):
 def is_encode_exp_url( url ):
     return url.startswith(ENCODE_BASE_URL+'/experiments/ENCSR')
 
-def get_accession_id_from_encode_exp_url( url ):    
+def get_accession_id_from_encode_exp_url( url ):
     for s in url.split('/')[-2:]:
         if s.startswith('ENC'): return s
     return None
@@ -124,7 +124,7 @@ def deep_search(json, s, help_str='root',debug=False):
         for i, e in enumerate(json):
             ret |= deep_search(e, s, help_str+'[{}]'.format(i))
     elif type(json)==dict:
-        for k in json:        
+        for k in json:
             ret |= deep_search(json[k], s, help_str+'.{}'.format(k))
     else:
         try:
@@ -165,7 +165,7 @@ def main():
             if args.encode_access_key_id: # if ENCODE key is given
                 search_data = requests.get(url_or_file, headers=HEADERS, auth=encode_auth)
             else:
-                search_data = requests.get(url_or_file, headers=HEADERS)    
+                search_data = requests.get(url_or_file, headers=HEADERS)
             json_data_search = search_data.json() #json.loads(search_data)
             for item in json_data_search['@graph']:
                 accession_id = item['accession']
@@ -203,7 +203,7 @@ def main():
         else:
             search_data = requests.get(ENCODE_BASE_URL+'/experiments/'+accession_id+'?format=json',
                 headers=HEADERS)
-        json_data_exp = search_data.json()  
+        json_data_exp = search_data.json()
 
         if json_data_exp['status']=='error':
             print("Error: cannot access to accession {}".format(accession_id))
@@ -217,13 +217,13 @@ def main():
                     assembly = arr[1]
                     # print('Warning: inferred assembly ({}) from keys and values in json (e.g. organism name)...'.format(assembly))
                     break
-        if 'assay_category' in json_data_exp:        
+        if 'assay_category' in json_data_exp:
             assay_category = json_data_exp['assay_category']
         else:
             assay_category = None
         # read files in accession
         downloaded_this_exp_accession = False
-        
+
         # init metadata object
         metadata = get_depth_one(json_data_exp)
         metadata['files'] = {} # file info
@@ -259,7 +259,7 @@ def main():
                 file_format = arr[1]
             else:
                 file_type = arr[0]
-                file_format = file_type                
+                file_format = file_type
             output_type = f['output_type'].lower() #.replace(' ','_')
             valid = ('all' in args.file_types)
             for ft in args.file_types:
@@ -267,24 +267,24 @@ def main():
                 if len(arr)>2:
                     if file_type==arr[0] and file_format==arr[1] and output_type==arr[2]:
                         valid = True
-                        break                    
+                        break
                 elif len(arr)>1:
                     if (file_type==arr[0] or file_format==arr[0]) and \
                         (file_format==arr[1] or output_type==arr[1]):
                         valid = True
                         break
-                else:                    
+                else:
                     if file_type==arr[0]:
                         valid = True
                         break
-            if not valid: continue            
+            if not valid: continue
             url_file = ENCODE_BASE_URL+f['href']
             file_accession_id = f['accession']
 
             if args.ignore_released and status=='released': continue
             if args.ignore_unpublished and status!='released': continue
             if 'paired_end' in f:
-                pair = int(f['paired_end']) 
+                pair = int(f['paired_end'])
             else:
                 pair = -1
             if 'replicate' in f and 'biological_replicates_number'in f['replicate']:
@@ -298,7 +298,7 @@ def main():
             if type(tech_rep_id)==list and len(tech_rep_id)>0:
                 tech_rep_id=tech_rep_id[0]
             else:
-                tech_rep_id=tech_rep_id            
+                tech_rep_id=tech_rep_id
             if args.pooled_rep_only and type(bio_rep_id)==list and len(bio_rep_id)<2:
                 continue
             # print(file_accession_id, file_assembly, file_type, file_format, output_type, bio_rep_id, tech_rep_id, pair)
@@ -347,17 +347,17 @@ def main():
                     os.system(cmd_wget)
                     time.sleep(0.25) # wait for 0.25 second per fastq
 
-            # relative path for file (for pipeline)            
+            # relative path for file (for pipeline)
             rel_file = args.dir + '/' + dir_suffix + '/' + os.path.basename(url_file)
             rel_file = rel_file.replace('//','/')
 
-            # check if paired with other fastq                
+            # check if paired with other fastq
             paired_with = None
             if file_type == 'fastq' and 'paired_with' in f:
                 paired_with = f['paired_with'].split('/')[2]
 
             # for fastq, store files with the same bio_rep_id and pair: these files will be pooled later in a pipeline
-            if bio_rep_id:                
+            if bio_rep_id:
                 metadata['files'][file_accession_id] = dict(
                     file_type=file_type,
                     file_format=file_format,
@@ -386,7 +386,7 @@ def main():
             'description(comma-delimited; file_acc_id:status:file_type:file_format:output_type:bio_rep_id:pair,...)\tfile'+ \
             '\tfile'.join([str(i+1) for i in range(max_num_files)]) + '\n'
         contents = ''
-        # table contents        
+        # table contents
         for accession_id in all_file_metadata:
             file_metadata = all_file_metadata[accession_id]
             desc = ''
